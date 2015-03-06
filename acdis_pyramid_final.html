@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>The cox model</title>
+	<style>
+		.main-container {
+			width: 95vw;
+			height: 90vh;
+			background-color: #ABC;
+			padding: 2% 2%
+			
+		}
+		
+		.quadrant {		
+			display: inline-block;	
+			background-color: #BCD;		
+		}
+		
+		svg {
+		  border: 1px solid #ccc;
+		}
+		
+		.axis line,
+		.axis path {
+		  shape-rendering: crispEdges;
+		  fill: transparent;
+		  stroke: #555;
+		}
+		.axis text {
+		  font-size: 11px;
+		}
+		
+		
+		.bar {
+		  fill-opacity: 0.5;
+		}
+		.bar.left {
+		  fill: steelblue;
+		}
+		.bar.right {
+		  fill: firebrick;
+		}
+		
+	</style>
+	<script type="text/javascript" src="d3.min.js"></script>
+</head>
+
+<body>
+	<p>Click on this text to update the chart with new data values (once).</p>
+	
+	<script type="text/javascript">	
+
+		var dispatch = d3.dispatch("load", "statechange","click");
+
+		var w = 500,
+		    h = 300;
+		    
+		// margin.middle is distance from center line to each y-axis
+		var margin = {
+		  top: 20,
+		  right: 20,
+		  bottom: 24,
+		  left: 20,
+		  middle: 28
+		};
+		
+		var yScale, xScale;
+		    
+		// the width of each side of the chart
+		var regionWidth = w/2 - margin.middle;
+		
+		// these are the x-coordinates of the y-axes
+		var pointA = regionWidth,
+		    pointB = w - regionWidth;
+		
+		var dataForYear;
+		var minYear,maxYear,currentYear;		
+		// Population data
+		var exampleData;
+		
+		// CREATE SVG
+		var svg = d3.select('body').append('svg')
+			  .attr('width', margin.left + w + margin.right)
+			  .attr('height', margin.top + h + margin.bottom)
+			  // ADD A GROUP FOR THE SPACE WITHIN THE MARGINS
+			  .append('g')
+			    .attr('transform', translation(margin.left, margin.top));
+		
+		// MAKE GROUPS FOR EACH SIDE OF CHART
+		// scale(-1,1) is used to reverse the left side so the bars grow left instead of right
+		var leftBarGroup = svg.append('g')
+			  .attr('transform', translation(pointA, 0) + 'scale(-1,1)');
+		var rightBarGroup = svg.append('g')
+			  .attr('transform', translation(pointB, 0));
+		
+		d3.csv("pyramid.csv", function(error,data) {
+			if(error) throw error;
+			// Convert string values of population to numbers.
+			data.forEach(function(d) {d.n = +d.n;});
+			exampleData = data;
+			// GET MIN AND MAX YEAR
+			minYear = d3.min(exampleData, function(d) { return d.year; });
+			maxYear = d3.max(exampleData, function(d) { return d.year; });
+
+			dispatch.load(minYear);
+			//generateVis(minYear);
+			  
+		});
+			  
+		// so sick of string concatenation for translations
+		function translation(x,y) {
+			return 'translate(' + x + ',' + y + ')';
+		}
+			 	   
+		function getData(yr){
+			// FILTER FOR A PARTICULAR YEARS DATA
+			dataForYear = exampleData.
+				filter(function(d){return d.year === yr;});
+			return dataForYear;
+		}
+
+		Array.prototype.unique = function(){
+			var n = {},r=[];
+			for(var i = 0; i < this.length; i++){
+				if (!n[this[i]]) 
+				{
+					n[this[i]] = true; 
+					r.push(this[i]); 
+				}
+			}
+
+			return r;
+		}
+
+		dispatch.on("load.dropdown",function (yr){
+			// Create array of unique years from exampleData
+			var years = [];
+
+			for(var i = 0; i < exampleData.length; i++){
+				if (years.indexOf(exampleData[i].year) == -1) years.push(exampleData[i].year);
+			}
+			// CREATE A SELECTION OBJECT (DROPDOWN)
+			var select = d3.select("body")
+    			.append("div")
+    			.append("select")
+      				.on("change", function() { dispatch.statechange(this.value); });
+      		// POPULATE SELECTION OPTIONS
+      		select.selectAll("option")
+      			.data(years)
+      			.enter().append("option")
+      			.attr("value", function(d) { return d; })
+      			.text(function(d) { return d; });
+
+      		dispatch.on("statechange.dropdown", function(value) {
+    			select.property("value", value);
+  			});
+		});	
+		
+		dispatch.on("load.pyramid",function generateVis(yr){
+		
+			// FILTER FOR A PARTICULAR YEARS DATA
+			dataForYear = getData(yr);
+			currentYear = +minYear;
+				
+			// GET THE TOTAL POPULATION SIZE FOR A GIVEN SIZE AND CREATE A FUNCTION FOR 
+			// RETURNING THE PERCENTAGE
+			var totalPopulation = d3.sum(dataForYear , function(d) { return d.n; }),
+			    percentage = function(d) { return d / totalPopulation; };
+			  
+			  
+			
+			
+			// find the maximum data value on either side
+			//  since this will be shared by both of the x-axes
+			var maxValue = Math.max(
+			  d3.max(dataForYear, 
+			  	function(d) { return percentage(d.n); })
+			);
+			
+			// SET UP SCALES
+			// the xScale goes from 0 to the width of a region
+			//  it will be reversed for the left x-axis
+			 xScale = d3.scale.linear()
+			  .domain([0, maxValue])
+			  .range([0, regionWidth])
+			  .nice();
+			
+			var xScaleLeft = d3.scale.linear()
+			  .domain([0, maxValue])
+			  .range([regionWidth, 0]);
+			
+			var xScaleRight = d3.scale.linear()
+			  .domain([0, maxValue])
+			  .range([0, regionWidth]);
+			
+			yScale = d3.scale.ordinal()
+			  .domain(exampleData.map(function(d) { return d.agegrp; }))
+			  .rangeRoundBands([h,0], 0.1);
+			
+			
+			// SET UP AXES
+			var yAxisLeft = d3.svg.axis()
+			  .scale(yScale)
+			  .orient('right')
+			  .tickSize(4,0)
+			  .tickPadding(margin.middle-4);
+			
+			var yAxisRight = d3.svg.axis()
+			  .scale(yScale)
+			  .orient('left')
+			  .tickSize(4,0)
+			  .tickFormat('');
+			
+			var xAxisRight = d3.svg.axis()
+			  .scale(xScale)
+			  .orient('bottom')
+			  .tickFormat(d3.format('%'));
+			
+			var xAxisLeft = d3.svg.axis()
+			  // REVERSE THE X-AXIS SCALE ON THE LEFT SIDE BY REVERSING THE RANGE
+			  .scale(xScale.copy().range([pointA, 0]))
+			  .orient('bottom')
+			  .tickFormat(d3.format('%'));
+			
+			
+			
+			// DRAW AXES
+			svg.append('g')
+			  .attr('class', 'axis y left')
+			  .attr('transform', translation(pointA, 0))
+			  .call(yAxisLeft)
+			  .selectAll('text')
+			  .style('text-anchor', 'middle');
+			
+			svg.append('g')
+			  .attr('class', 'axis y right')
+			  .attr('transform', translation(pointB, 0))
+			  .call(yAxisRight);
+			
+			svg.append('g')
+			  .attr('class', 'axis x left')
+			  .attr('transform', translation(0, h))
+			  .call(xAxisLeft);
+			
+			svg.append('g')
+			  .attr('class', 'axis x right')
+			  .attr('transform', translation(pointB, h))
+			  .call(xAxisRight);
+			
+			// DRAW BARS
+			leftBarGroup.selectAll('.bar.left')
+			  .data(dataForYear.filter(function(d){
+					return d.sex === "MAL";
+				}))
+			  .enter().append('rect')
+			    .attr('class', 'bar left')
+			    .attr('x', 0)
+			    .attr('y', function(d) { return yScale(d.agegrp); })
+			    .attr('width', function(d) { return xScale(percentage(d.n)); })
+			    .attr('height', yScale.rangeBand());
+			
+			rightBarGroup.selectAll('.bar.right')
+			  .data(dataForYear.filter(function(d){
+					return d.sex === "FEM";
+				}))
+			  .enter().append('rect')
+			    .attr('class', 'bar right')
+			    .attr('x', 0)
+			    .attr('y', function(d) { return yScale(d.agegrp); })
+			    .attr('width', function(d) { return xScale(percentage(d.n)); })
+			    .attr('height', yScale.rangeBand());
+			
+			svg.append("text")			    
+			    .attr("text-anchor", "end")
+			    .attr("x", w)
+			    .attr("y", 20)
+			    .text("FEMALES");
+			 
+			 svg.append("text")			    
+			    .attr("text-anchor", "start")
+			    .attr("x", 0)
+			    .attr("y", 20)
+			    .text("MALES");
+			    
+			 svg.append("text")	
+			 	.attr("id","year_text")		    
+			    .attr("text-anchor", "middle")
+			    .attr("x", w/2)
+			    .attr("y", 0)
+			    .text(currentYear);
+			    
+			dispatch.on("statechange.pyramid", function(value) {
+    			updateViz(value);
+  			});
+			
+		});
+
+		function updateViz(yr){
+			dataForYear = getData(yr);
+
+			var totalPopulation = d3.sum(dataForYear , function(d) { return d.n; }),
+			    percentage = function(d) { return d / totalPopulation; };
+
+			    // DRAW BARS
+				leftBarGroup.selectAll('.bar.left')
+					.data(dataForYear.filter(function(d){
+							return d.sex === "MAL";
+					}))
+					.transition()
+					.duration(1000)
+					.attr('class', 'bar left')
+					.attr('x', 0)
+					.attr('y', function(d) { return yScale(d.agegrp); })
+					.attr('width', function(d) { return xScale(percentage(d.n)); })
+					.attr('height', yScale.rangeBand());
+					
+				rightBarGroup.selectAll('.bar.right')
+					.data(dataForYear.filter(function(d){
+							return d.sex === "FEM";
+						}))
+					.transition()
+					.duration(1000)
+					.attr('class', 'bar right')
+					.attr('x', 0)
+					.attr('y', function(d) { return yScale(d.agegrp); })
+					.attr('width', function(d) { return xScale(percentage(d.n)); })
+					.attr('height', yScale.rangeBand());
+					    
+					svg.select("#year_text")
+						.text(yr);
+
+				currentYear = +yr;
+							
+		}
+		
+		//On click, update with new data			
+			d3.select("p")
+				.on("click", function() {
+					// When we have reached the last year in our records, start again
+					currentYear = (+currentYear)+1;
+					if(currentYear > +maxYear){
+						currentYear = minYear;						
+					}
+
+					dispatch.statechange(''+currentYear+'');							
+				
+				});
+		
+		</script>	
+	
+	</body>
+</html>		

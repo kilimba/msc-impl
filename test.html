@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>The box model</title>
+	<style>
+		.main-container {
+			width: 95vw;
+			height: 90vh;
+			background-color: #ABC;
+			padding: 2% 2%
+			
+		}
+		
+		.quadrant {		
+			display: inline-block;	
+			background-color: #BCD;		
+		}
+		
+	</style>
+	<script type="text/javascript" src="d3.js"></script>
+</head>
+
+<body>
+mende anazaliwa
+	
+	<script type="text/javascript">
+	
+		var quadheight = 48+"%";	
+		var quadwidth = 48+"%";
+		
+		var maincontainer = d3.select("body")
+			.append("div")
+			.attr("class","main-container")
+			.attr("id","main-cont");
+			
+		var ltq = maincontainer
+			.append("svg")
+			.attr("id", "left-top-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+			
+		var rtq = maincontainer
+			.append("svg")
+			.attr("id", "right-top-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+			
+		var lbq = maincontainer
+			.append("svg")
+			.attr("id", "left-bottom-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+			
+		var rbq = maincontainer
+			.append("svg")
+			.attr("id", "right-bottom-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+		
+		
+	
+	</script>	
+	
+</body>
+</html>
