@@ -1,69 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<title>The box model</title>
-	<style>
-		.main-container {
-			width: 95vw;
-			height: 90vh;
-			background-color: #ABC;
-			padding: 2% 2%
-			
-		}
-		
-		.quadrant {		
-			display: inline-block;	
-			background-color: #BCD;		
-		}
-		
-	</style>
-	<script type="text/javascript" src="d3.js"></script>
-</head>
+	<title>The cox model</title>
 
-<body>
-mende anazaliwa
-	
-	<script type="text/javascript">
-	
-		var quadheight = 48+"%";	
-		var quadwidth = 48+"%";
+<script type="text/javascript" src="d3.min.js"></script>
+	</head>
+
+	<body>
+		<p>Click on this text to update the chart with new data values (once).</p>
 		
-		var maincontainer = d3.select("body")
-			.append("div")
-			.attr("class","main-container")
-			.attr("id","main-cont");
-			
-		var ltq = maincontainer
-			.append("svg")
-			.attr("id", "left-top-quadrant")
-			.attr("width", quadwidth)
-			.attr("height", quadheight)
-			.attr("class","quadrant");
-			
-		var rtq = maincontainer
-			.append("svg")
-			.attr("id", "right-top-quadrant")
-			.attr("width", quadwidth)
-			.attr("height", quadheight)
-			.attr("class","quadrant");
-			
-		var lbq = maincontainer
-			.append("svg")
-			.attr("id", "left-bottom-quadrant")
-			.attr("width", quadwidth)
-			.attr("height", quadheight)
-			.attr("class","quadrant");
-			
-		var rbq = maincontainer
-			.append("svg")
-			.attr("id", "right-bottom-quadrant")
-			.attr("width", quadwidth)
-			.attr("height", quadheight)
-			.attr("class","quadrant");
+		<script type="text/javascript">	
+
+		var w = 500,
+		    h = 300;
+		    
+		// margin.middle is distance from center line to each y-axis
+		var margin = {
+		  top: 20,
+		  right: 20,
+		  bottom: 24,
+		  left: 20,
+		  middle: 28
+		};
+
+		// the width of each side of the chart
+		var regionWidth = w/2 - margin.middle;
 		
-		
+		// these are the x-coordinates of the y-axes
+		var pointA = regionWidth,
+		    pointB = w - regionWidth;
+
+		var svg = d3.select('body').append('svg')
+			  .attr('width', margin.left + w + margin.right)
+			  .attr('height', margin.top + h + margin.bottom)
+			  // ADD A GROUP FOR THE SPACE WITHIN THE MARGINS
+			  .append('g')
+			    .attr('transform', 'translate('+margin.left+','+ margin.top+')');
+
+		// MAKE GROUPS FOR EACH SIDE OF CHART
+		// scale(-1,1) is used to reverse the left side so the bars grow left instead of right
+		var leftBarGroup = svg.append('g')
+			  .attr('transform', 'translate('+pointA+','+ 0+')' + 'scale(-1,1)');
+		var rightBarGroup = svg.append('g')
+			  .attr('transform', 'translate('+pointB+','+ 0+')');
+
+		</script>	
 	
-	</script>	
-	
-</body>
-</html>
+	</body>
+</html>		
