@@ -1,0 +1,112 @@
+.lineM{
+    stroke:steelblue;
+    fill:steelblue;
+    background-color:steelblue;
+}
+
+.lineF{
+    stroke:#CC6699;
+    fill:#CC6699;
+    background-color:#CC6699;
+}
+.line_6, .Line_C, .Line_E{
+    stroke:#2850AD;
+    fill:#2850AD;
+    background-color:#2850AD;
+}
+.Line_3, .Line_D, .Line_F, .Line_M,.line_7 {
+    stroke:firebrick;
+    fill:firebrick;
+    background-color:firebrick;
+}
+.line_8 {
+    stroke:#6CBE45;
+    fill:#6CBE45;
+    background-color:#6CBE45;
+}
+.line_9 {
+    stroke:#996633;
+    fill:#996633;
+    background-color:#996633;
+}
+.line_10 {
+    stroke:#A7A9AC;
+    fill:#A7A9AC;
+    background-color:#A7A9AC;
+}
+.line_11, .Line_Q, .Line_R {
+    stroke:#FCCC0A;
+    fill:#FCCC0A;
+    background-color:#FCCC0A;
+}
+.line_12 {
+    stroke:#808183;
+    fill:#808183;
+    background-color:#808183;
+}
+.line_13, .Line_2, .Line_3{
+    stroke:#EE352E;
+    fill:#EE352E;
+    background-color:#EE352E;
+}
+.line_14, .Line_5, .Line_6{
+    stroke:#00933C;
+    fill:#00933C;
+    background-color:#00933C;
+}
+.line_15 {
+    stroke:#B933AD;
+    fill:#B933AD;
+    background-color:#B933AD;
+}
+
+.line_16, .Line_C, .Line_E{
+    stroke:#2851AF;
+    fill:#2851AF;
+    background-color:#2851AF;
+}
+
+.line_17, .Line_C, .Line_E{
+    stroke:#9fda9f;
+    fill:#9fda9f;
+    background-color:#9fda9f;
+}
+
+.line_18, .Line_C, .Line_E{
+    stroke:#000000;
+    fill:#000000;
+    background-color:#000000;
+}
+
+.line_19, .Line_C, .Line_E{
+    stroke:#d21f57;
+    fill:#d21f57;
+    background-color:#d21f57;
+}
+
+.line_20, .Line_C, .Line_E{
+    stroke:#3f142a;
+    fill:#3f142a;
+    background-color:#3f142a;
+}
+
+.line_21, .Line_C, .Line_E{
+    stroke:#008282;
+    fill:#008282;
+    background-color:#008282;
+}
+
+.line_22, .Line_C, .Line_E{
+    stroke:#990000;
+    fill:#990000;
+    background-color:#990000;
+}
+
+.line_23, .Line_C, .Line_E{
+    stroke:#333300;
+    fill:#333300;
+    background-color:#333300;
+}
+
+
+
