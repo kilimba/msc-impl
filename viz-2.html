@@ -3,11 +3,57 @@
 <head>
 	<title>The cox model</title>
 	<style>
+	menu-div {
+		 position:relative;
+		 right: 920;
+	}
+
+	.axis path, line{
+        stroke:black;
+    }
+    .timeseries path{
+        stroke-width:3px;
+    }
+    .timeseries circle{
+        stroke: white;
+    }
+    .timeseries text{
+        fill: white;
+        stroke: none;
+        font-size:12px;
+        font-weight: bold;
+    }
+    .line {
+        float:left;
+    }
+    .line_container{
+        width: 150px;
+        height: 20px;
+    }
+    path{
+        fill: none;
+    }
+    .key{
+        float:right;
+    }
+    .key_line{
+        font-size:17px;
+        width:100%;
+    }
+    .key_square{
+        height:10px;
+        width:10px;
+        outline:solid 1px black;
+        float:left;
+        margin-right:10px;
+        margin-top:6px;
+        margin-left:10px;
+    }
 		.main-container {
-			width: 95vw;
-			height: 90vh;
-			padding: 2% 2%
-			
+			width: 910;
+			height: 645;
+			padding: 2% 2%;
+			float:left;
 		}
 		
 		.quadrant {		
@@ -69,6 +115,10 @@
 			.attr("width", quadwidth)
 			.attr("height", quadheight)
 			.attr("class","quadrant");
+
+		var menu = d3.select("body")
+    		.append("div")
+    		.attr("id","menu-div");
 			
 		var lbq = maincontainer
 			.append("svg")
@@ -84,6 +134,7 @@
 			.attr("height", quadheight)
 			.attr("class","quadrant");
 			
+		
     // ################## PYRAMID CODE STARTS HERE ##################
 
     var dispatch = d3.dispatch("load", "statechange","click");
@@ -115,10 +166,7 @@
 		var exampleData;
 		
 		// CREATE SVG
-		var svg = d3.select('#left-top-quadrant')//.append('svg')
-			  //.attr('width', quadwidth)
-			  //.attr('height', quadheight)
-			  // ADD A GROUP FOR THE SPACE WITHIN THE MARGINS
+		var svg = d3.select('#left-top-quadrant')
 			  .append('g')
 			    .attr('transform', translation(10, margin.top));
 		
@@ -139,6 +187,7 @@
 			maxYear = d3.max(exampleData, function(d) { return d.year; });
 
 			dispatch.load(minYear);
+			draw(fiveYearAgeGrps,exampleData);
 			//generateVis(minYear);
 			  
 		});
@@ -195,7 +244,7 @@
 		dispatch.on("load.pyramid",function generateVis(yr){
 		
 			// FILTER FOR A PARTICULAR YEARS DATA
-			dataForYear = getData(yr);
+			dataForYear = getDataForYear(yr);
 			currentYear = +minYear;
 				
 			// GET THE TOTAL POPULATION SIZE FOR A GIVEN SIZE AND CREATE A FUNCTION FOR 
@@ -332,7 +381,7 @@
 		});
 
 		function updateViz(yr){
-			dataForYear = getData(yr);
+			dataForYear = getDataForYear(yr);
 
 			var totalPopulation = d3.sum(dataForYear , function(d) { return d.n; }),
 			    percentage = function(d) { return d / totalPopulation; };
@@ -382,9 +431,375 @@
 				
 				});
 
-	// #################### PYRAMID CODE ENDS HERE ################################		
-    	
-		
+	// #################### PYRAMID CODE ENDS HERE ################################	
+
+	// #################### TIME SERIES CODE STARTS HERE ##########################
+
+	var groups = '[{"agegrp": "6","value": "0-4"},{"agegrp": "7","value": "5-9"},{"agegrp": "8","value": "10-14"},{"agegrp": "9","value": "15-19"},{"agegrp": "10","value": "20-24"},{"agegrp":"11","value": "25-29"},{"agegrp": "12","value": "30-34"},{"agegrp": "13","value": "35-39"},{"agegrp": "14","value":"40-44"},{"agegrp":"15","value": "45-49"},{"agegrp":"16","value": "50-54"},{"agegrp": "17","value": "55-59"},{"agegrp": "18","value": "60-64"},{"agegrp": "19","value": "65-69"},{"agegrp": "20","value": "70-74"},{"agegrp": "21","value": "75-79"},{"agegrp": "22","value": "80-84"},{"agegrp": "23","value": "85+"}]';
+    var fiveYearAgeGrps = JSON.parse(groups);
+
+    var time_scale;
+    var percent_scale;
+    var exampleData;    
+    var fiveYearAgeGrps; 
+    var maxValue;
+    // remove later, debugging variables
+    var filtered_data,total_data;
+    var years;
+    var selected_agegrp;
+    function get_timeseries_data(d,i){
+        // get the id of the current element
+        selected_agegrp = d.agegrp;
+
+        // see if we have an associated time series
+        var tsMale = d3.select('#line_M'+selected_agegrp);
+        var tsFemale = d3.select('#line_F'+selected_agegrp);
+        // toggle
+        if (tsMale.empty() & tsFemale.empty()){
+            //d3.csv('pyramid.csv', function(data){
+                //total_data = data;                
+                filtered_data = total_data.filter(function(d){return d.agegrp === ''+selected_agegrp+''});
+                draw_timeseries(filtered_data, selected_agegrp);
+
+           // })
+        } else {
+            tsMale.remove();
+            tsFemale.remove();
+        }
+    }
+    
+    function add_label(circle, d, i){
+        d3.select(circle)
+            .transition()
+            .attr('r', 9)
+            .attr('class','line_'+d.agegrp)
+        
+        d3.select('#line_M' + d.agegrp).append('text')
+            .text(d.agegrp)
+            .attr('text-anchor','middle')
+            .style("dominant-baseline","central")
+            .attr('x', time_scale(new Date('01/07/'+d.year)))
+            .attr('y', percent_scale(getPercent(d.year,d.agegrp,d.sex)))
+            .attr('class','linelabel')
+            .style('opacity',0)
+            .style('fill','white')
+            .transition()
+                .style('opacity',1)     
+
+            d3.select('#line_F' + d.agegrp).append('text')
+            .text(d.agegrp)
+            .attr('text-anchor','middle')
+            .style("dominant-baseline","central")
+            .attr('x', time_scale(new Date('01/07/'+d.year)))
+            .attr('y', percent_scale(getPercent(d.year,d.agegrp,d.sex)))
+            .attr('class','linelabel')
+            .style('opacity',0)
+            .style('fill','white')
+            .transition()
+                .style('opacity',1)        
+    }
+
+    //var totalPopulation = d3.sum(dataForYear , function(d) { return d.n; }),
+      //          percentage = function(d) { return d / totalPopulation; };
+
+    function getDataForYear(yr){
+            // FILTER FOR A PARTICULAR YEARS DATA            
+            dataForYear = exampleData.filter(function(d){return d.year === yr;});
+            return dataForYear;
+    }
+
+    // Get total percentage (male and female) of a population for a particular year
+    // for a particular age group
+    function getYearlyCombinedSexPercentage(agegroup,year){
+        var filtered_data = total_data.filter(function(d){return d.agegrp 
+                === agegroup & d.year === year});
+        var tot_pop_for_agegroup_that_year = d3.sum(filtered_data , function(d) { return d.n; });
+        filtered_data = total_data.filter(function(d){return d.year === year});
+        var tot_pop_that_year = d3.sum(filtered_data , function(d) { return d.n; });
+        percentage = tot_pop_for_agegroup_that_year/tot_pop_that_year;
+        return percentage;
+
+    }
+
+    function getTotalData(){
+        return total_data;
+    }
+    
+    function getMaxPercentageForAllYears(){
+        var percentages = [];
+        for (i = 0; i < years.length; i++){
+            percentages.push(getMaxPercentageForYear(years[i]));
+        }
+        return d3.max(percentages);
+    }
+
+    function getMaxPercentageForYear(yr){
+        var dataForYear = getDataForYear(yr) ;
+        var totalPopulation = d3.sum(dataForYear, function (d) { return d.n; });
+        var maxValue = Math.max(
+              d3.max(dataForYear, 
+                function(d) { return (d.n)/totalPopulation; })
+            );
+        return maxValue;
+    }
+
+    function getPercent(year, agegrp, sex){
+        var dataForYear = getDataForYear(year) ;
+        var totalPopulation = d3.sum(dataForYear, function (d) { return d.n; });
+        var agegrpData = dataForYear.filter(function (d){return d.agegrp === agegrp & d.sex === sex});
+        agegrpPercent = agegrpData[0].n/totalPopulation;
+        return agegrpPercent;
+    }
+
+    var femaleData;
+    var maleData;
+    function draw_timeseries(data, id){
+        femaleData = data.filter(function (d){return d.sex === "FEM" & d.agegrp === id});
+        maleData = data.filter(function (d){return d.sex === "MAL" & d.agegrp === id});
+
+        // given the age group and year, get percent of population that age group occupies
+
+        var line = d3.svg.line()
+            .x(function(d){return time_scale(new Date('01/07/'+d.year))})
+            .y(function(d){return percent_scale(getPercent(d.year,d.agegrp,d.sex))})
+            .interpolate("linear")
+        
+        var g = d3.select('#chart')
+            .append('g')
+            .attr('id', "line_F"+id)
+            .attr('class', 'timeseries lineF')
+        
+        g.append('path')
+            .attr('d', line(femaleData))
+        
+        g.selectAll('circle')
+            .data(femaleData)
+            .enter()
+            .append("circle")
+            .attr('cx', function(d) {return time_scale(new Date('01/07/'+d.year))})
+            .attr('cy', function(d) {return percent_scale(getPercent(d.year,d.agegrp,d.sex))})
+            .attr('r',0)
+                
+        var enter_duration = 1000;
+        g.selectAll('circle')
+            .transition()
+            .delay(function(d, i) { return i / femaleData.length * enter_duration; })
+            .attr('r', 5)
+            .each('end',function(d,i){
+                if (i === femaleData.length-1){
+                    add_label(this,d)
+                }
+            })
+
+        g.selectAll('circle')
+            .on('mouseover', function(d){
+                d3.select(this)
+                    .transition().attr('r', 9)
+            })
+            .on('mouseout', function(d,i){
+                if (i !== femaleData.length-1) {
+                    d3.select(this).transition().attr('r', 5)
+                }
+            })
+        
+        g.selectAll('circle')
+            .on('mouseover.tooltip', function(d){
+                d3.select("#text_" + d.agegrp).remove()
+                d3.select('#chart')
+                    .append('text')
+                    .text((getPercent(d.year,d.agegrp,d.sex)*100).toFixed(2)+ "%")
+                    .attr('x', time_scale(new Date('01/07/'+d.year)))
+                    .attr('y', percent_scale(getPercent(d.year,d.agegrp,d.sex)) - 10)
+                    .attr('text-anchor','end')
+                    .attr('class', 'line_'+d.agegrp)
+                    .attr("id", "text_"+d.agegrp);
+            })
+            .on('mouseout.tooltip', function(d){
+                d3.select("#text_" + d.agegrp)
+                    .transition()
+                    .duration(500)
+                    .style('opacity',0)
+                    .attr('transform', 'translate(10, -10)')
+                    .remove()
+            })
+            //******************* MALE DATA *******************
+        var g_male = d3.select('#chart')
+            .append('g')
+            .attr('id', "line_M"+id)
+            .attr('class', 'timeseries lineM')
+        
+        g_male.append('path')
+            .attr('d', line(maleData))
+        
+        g_male.selectAll('circle')
+            .data(maleData)
+            .enter()
+            .append("circle")
+            .attr('cx', function(d) {return time_scale(new Date('01/07/'+d.year))})
+            .attr('cy', function(d) {return percent_scale(getPercent(d.year,d.agegrp,d.sex))})
+            .attr('r',0)
+                
+        var enter_duration = 1000;
+        g_male.selectAll('circle')
+            .transition()
+            .delay(function(d, i) { return i / maleData.length * enter_duration; })
+            .attr('r', 5)
+            .each('end',function(d,i){
+                if (i === maleData.length-1){
+                    add_label(this,d)
+                }
+            })
+            
+        
+        g_male.selectAll('circle')
+            .on('mouseover', function(d){
+                d3.select(this)
+                    .transition().attr('r', 9)
+            })
+            .on('mouseout', function(d,i){
+                if (i !== femaleData.length-1) {
+                    d3.select(this).transition().attr('r', 5)
+                }
+            })
+        
+        g_male.selectAll('circle')
+            .on('mouseover.tooltip', function(d){
+                d3.select("#text_" + d.agegrp).remove()
+                d3.select('#chart')
+                    .append('text')
+                    .text((getPercent(d.year,d.agegrp,d.sex)*100).toFixed(2)+ "%")
+                    .attr('x', time_scale(new Date('01/07/'+d.year)))
+                    .attr('y', percent_scale(getPercent(d.year,d.agegrp,d.sex)) - 10)
+                    .attr('text-anchor','end')
+                    .attr('class', 'line_'+d.agegrp)
+                    .attr("id", "text_"+d.agegrp);
+            })
+            .on('mouseout.tooltip', function(d){
+                d3.select("#text_" + d.agegrp)
+                    .transition()
+                    .duration(500)
+                    .style('opacity',0)
+                    .attr('transform', 'translate(10, -10)')
+                    .remove()
+            })
+    }
+    
+    Array.prototype.unique = function(){
+            var n = {},r=[];
+            for(var i = 0; i < this.length; i++){
+                if (!n[this[i]]) 
+                {
+                    n[this[i]] = true; 
+                    r.push(this[i]); 
+                }
+            }
+
+            return r;
+    }
+    
+    function getData(){
+        d3.csv('pyramid.csv', function(data){
+                total_data = data;
+                draw(fiveYearAgeGrps,total_data);
+        })
+    }
+
+
+
+
+    function draw(agegrps,data) {
+        "use strict";
+        years = [];
+
+        for(var i = 0; i < data.length; i++){
+            if (years.indexOf(exampleData[i].year) == -1) years.push(exampleData[i].year);
+        }
+        years = years.unique();
+            
+        // set up the viewport, the scales, and axis generators
+        
+        var container_dimensions = {width: 450, height: 289},
+            margins = {top: 10, right: 20, bottom: 30, left: 60},
+            chart_dimensions = {
+                width: container_dimensions.width - margins.left - margins.right,
+                height: container_dimensions.height - margins.top - margins.bottom
+            };
+
+        time_scale = d3.time.scale()
+            .range([0, chart_dimensions.width])
+            .domain([d3.min(exampleData, function(d) {return new Date('01/07/'+d.year)}),
+                       d3.max(exampleData, function(d) {return new Date('01/07/'+d.year)})]);
+        
+        var maxPercent = getMaxPercentageForAllYears();
+        percent_scale = d3.scale.linear()
+            .range([chart_dimensions.height, 0])
+            .domain([0, maxPercent]);
+        
+        var time_axis = d3.svg.axis()
+            .scale(time_scale)
+            .tickValues(time_scale.ticks(d3.time.year, 1));
+        
+        var count_axis = d3.svg.axis()
+            .scale(percent_scale)
+            .orient("left")
+            .tickFormat(d3.format('%'));
+        
+        // draw axes
+        
+        var g = d3.select('#right-top-quadrant')
+          .append('svg')
+            .attr("width", container_dimensions.width)
+            .attr("height", container_dimensions.height)
+          .append("g")
+            .attr("transform", "translate(" + margins.left + "," + margins.top + ")")
+            .attr("id","chart");
+        
+        g.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + chart_dimensions.height + ")")
+          .call(time_axis);
+         
+        g.append("g")
+          .attr("class", "y axis")
+          .attr("id","y_axis")
+          .call(count_axis);
+        
+      // draw the y-axis label
+        
+        d3.select('#y_axis')
+            .append('text')
+            .text('percent (%)')
+            .attr('transform', "rotate (-270, 0, 0)")
+            .attr('x', 100)
+            .attr('y', 50);
+        
+        // draw the key
+        
+        var key_items = d3.select('#key')
+          .selectAll('div')
+          .data(agegrps)
+          .enter()
+          .append('div')
+            .attr('class','key_line')
+            .attr('id',function(d){return "key_"+d.agegrp})
+            
+        key_items.append('div')
+            .attr('id', function(d){return 'key_square_' + d.agegrp})
+            .attr('class', function(d){return 'key_square line_' + d.agegrp})
+        
+        key_items.append('div')
+            .attr('class','key_label')
+            .text(function(d){return d.value})
+        
+        d3.selectAll('.key_line')
+            .on('click', get_timeseries_data)
+        
+    }
+
+    //############## FILTERING OPTIONS START HERE ############################
+
+   
+	
 		
 		
 	

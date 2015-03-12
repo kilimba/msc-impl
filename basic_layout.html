@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+	<script type="text/javascript" src="d3.min.js"></script>
+</head>
+
+<body>
+	
+	<script type="text/javascript">
+	
+		var dataset;	
+		var quadheight = "289";	
+		var quadwidth = "450";
+		
+		var maincontainer = d3.select("body")
+			.append("div")
+			.attr("class","main-container")
+			.attr("id","main-cont");
+			
+		var ltq = maincontainer
+			.append("svg")
+			.attr("id", "left-top-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+			
+		var rtq = maincontainer
+			.append("svg")
+			.attr("id", "right-top-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+
+		var menu = d3.select("body")
+    		.append("div")
+    		.attr("id","menu-div");
+			
+		var lbq = maincontainer
+			.append("svg")
+			.attr("id", "left-bottom-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+			
+		var rbq = maincontainer
+			.append("svg")
+			.attr("id", "right-bottom-quadrant")
+			.attr("width", quadwidth)
+			.attr("height", quadheight)
+			.attr("class","quadrant");
+
+	</script>
+
+</body>
+</html>
