@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.label {
+  font-weight: bold;
+}
+
+.tile {
+  shape-rendering: crispEdges;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+<script type="text/javascript" src="d3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 90, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var parseDate = d3.time.format("%Y-%m-%d").parse,
+    formatDate = d3.time.format("%b %Y");
+
+var x = d3.time.scale().range([0, width]),
+    y = d3.scale.linear().range([height, 0]),
+    z = d3.scale.linear().range(["white", "steelblue"]);
+
+// The size of the buckets in the CSV data file.
+// This could be inferred from the data if it weren't sparse.
+var xStep = 864e5,
+    yStep = 1; // was 100 here, changed to 1
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var data; //return this back into anonymous function below, out
+// here temporarily for debugging
+
+d3.csv("pyramid.csv", function(buckets) {
+
+  // Coerce the CSV data to the appropriate types. Create an id field
+  buckets.forEach(function(d) {
+    
+    //d.count = +d.count;
+    d.id = (d.year).concat(d.agegrp)
+  });
+
+  data = d3.nest()
+    .key(function(d) { return d.id;})
+    .rollup(function(d) { 
+     return d3.sum(d, function(g) {return g.n; });
+    }).entries(buckets);
+
+  data.forEach(function(d) {
+    d.year = d.key.substring(0,4);
+    d.agegrp = +d.key.substring(4,6);
+  });
+
+  // Compute the scale domains.
+  x.domain(d3.extent(data, function(d) { return new Date("01/01/".concat(d.year)); }));
+  y.domain(d3.extent(data, function(d) { return d.agegrp; }));
+  z.domain([0, d3.max(data, function(d) { return d.values; })]);  
+
+  // Extend the x- and y-domain to fit the last bucket. 31536000000 is the millisecond value 
+  // for a full year
+  x.domain([x.domain()[0], +x.domain()[1] + 31536000000]);
+  y.domain([y.domain()[0], y.domain()[1] + yStep]);
+
+  var groups = '[{"agegrp": "6","value": "0-4"},{"agegrp": "7","value": "5-9"},{"agegrp": "8","value": "10-14"},{"agegrp": "9","value": "15-19"},{"agegrp": "10","value": "20-24"},{"agegrp":"11","value": "25-29"},{"agegrp": "12","value": "30-34"},{"agegrp": "13","value": "35-39"},{"agegrp": "14","value":"40-44"},{"agegrp":"15","value": "45-49"},{"agegrp":"16","value": "50-54"},{"agegrp": "17","value": "55-59"},{"agegrp": "18","value": "60-64"},{"agegrp": "19","value": "65-69"},{"agegrp": "20","value": "70-74"},{"agegrp": "21","value": "75-79"},{"agegrp": "22","value": "80-84"},{"agegrp": "23","value": "85+"}]';
+  
+  var fiveYearAgeGrps = JSON.parse(groups);
+
+
+  // Display the tiles for each non-zero bucket.
+  // See http://bl.ocks.org/3074470 for an alternative implementation.
+  svg.selectAll(".tile")
+      .data(data)
+    .enter().append("rect")
+      .attr("class", "tile")
+      .attr("x", function(d) { return (x(new Date("01/01/".concat(d.year)))); })
+      .attr("y", function(d) { return y(d.agegrp + yStep); })
+      .attr("width", x(new Date("01/01/2001")) - x(new Date("01/01/2000")))
+      .attr("height",  y(0) - y(yStep))
+      .style("fill", function(d) { return z(d.values); })
+      .append("title")
+        .text(function(d,i) {
+          return "Age Group: "+fiveYearAgeGrps[d.agegrp - 6].value+"\nAbsolute Count: "+ d.values+"\nYear: "+d.year;
+        });
+
+  // Add a legend for the color values.
+  var legend = svg.selectAll(".legend")
+      .data(z.ticks().slice(1).reverse())
+    .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d, i) { return "translate(" + (width + 20) + "," + (20 + i * 20) + ")"; });
+
+  legend.append("rect")
+      .attr("width", 20)
+      .attr("height", 20)
+      .style("fill", z);
+
+  legend.append("text")
+      .attr("x", 26)
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text(String);
+
+  svg.append("text")
+      .attr("class", "label")
+      .attr("x", width + 20)
+      .attr("y", 10)
+      .attr("dy", ".35em")
+      .text("Count");
+
+  // Add an x-axis with label.
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.svg.axis().scale(x).tickValues(x.ticks(d3.time.year, 1)).orient("bottom"))
+    .append("text")
+      .attr("class", "label")
+      .attr("x", width)
+      .attr("y", -6)
+      .attr("text-anchor", "end")
+      .text("Date");
+
+  // Add a y-axis with label.
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(d3.svg.axis().scale(y).orient("left"))
+    .append("text")
+      .attr("class", "label")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .attr("text-anchor", "end")
+      .attr("transform", "rotate(-90)")
+      .text("Value");
+});
+
+</script>
